@@ -2,6 +2,22 @@
 
 A Docker Compose application with a Streamlit interface, a YOLO-based video analysis service, and a vector-search service for safety-event records.
 
+## GitHub repository
+
+Source code and project documentation: [tapodyuti/vision-rag-copilot](https://github.com/tapodyuti/vision-rag-copilot). This link opens the GitHub repository and README; it is not a hosted website. To run the app locally, follow the instructions below and open <http://localhost:8501>.
+
+Short description: A Docker-based video analysis app that detects objects in uploaded videos and lets users ask timestamped questions or search saved safety-event records using a local or optional cloud vision model.
+
+After editing files, save and upload your changes to GitHub from the project directory:
+
+```powershell
+git add .
+git commit -m "Describe your changes"
+git push
+```
+
+Once pushed, the updated README can be read from the GitHub repository URL above, even after this chat session ends.
+
 ## Run the application
 
 From the project directory, build and start the services:
