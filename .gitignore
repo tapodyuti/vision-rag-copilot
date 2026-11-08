@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.py[cod]
+
+# Generated vector database and downloaded model weights
+rag_service/chroma_db/
+*.pt
+
+# Local test media
+Test videos/

@@ -1,0 +1,91 @@
+services:
+  vision-service:
+    build: ./vision_service
+    container_name: vision_node
+    volumes:
+      - ./vision_service:/app
+      - video_data:/data/videos
+    environment:
+      - VIDEO_DATA_DIR=/data/videos
+      - REDIS_HOST=redis-broker
+    depends_on:
+      - redis-broker
+    ports:
+      - "8001:8001"
+
+  rag-service:
+    build: ./rag_service
+    container_name: rag_node
+    volumes:
+      - ./rag_service:/app
+      - huggingface_cache:/root/.cache/huggingface
+      - rag_data:/data/rag
+    environment:
+      - VISION_SERVICE_URL=http://vision-service:8001
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.8-flash}
+      - SEARCH_HISTORY_DB=/data/rag/search_history.db
+    ports:
+      - "8002:8002"
+    depends_on:
+      vision-service:
+        condition: service_started
+      ollama:
+        condition: service_started
+      ollama-model-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8002/', timeout=2)"
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 60s
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama_service
+    volumes:
+      - ollama_data:/root/.ollama
+
+  ollama-model-init:
+    image: curlimages/curl:8.10.1
+    container_name: ollama_model_init
+    depends_on:
+      - ollama
+    entrypoint:
+      - /bin/sh
+      - -c
+      - >-
+        until curl -fsS http://ollama:11434/api/tags >/dev/null; do sleep 2; done;
+        curl -fsS http://ollama:11434/api/pull
+        -H 'Content-Type: application/json'
+        -d '{"name":"qwen2.5vl:3b","stream":false}'
+    restart: "no"
+
+  frontend:
+    build: ./frontend
+    container_name: ui_node
+    ports:
+      - "8501:8501"
+    depends_on:
+      vision-service:
+        condition: service_started
+      rag-service:
+        condition: service_healthy
+
+  redis-broker:
+    image: redis:alpine
+    container_name: redis_broker
+    ports:
+      - "6379:6379"
+
+volumes:
+  huggingface_cache:
+  rag_data:
+  video_data:
+  ollama_data:
